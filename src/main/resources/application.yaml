@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: temporal
+  temporal:
+    namespace: default
+    connection:
+      target: 127.0.0.1:7233
+    workersAutoDiscovery:
+      packages: com.brendan.temporal
+tree:
+  maxItemsPerLeaf: 5
+  maxChildren: 5
+  maxDepth: 999
