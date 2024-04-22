@@ -20,14 +20,20 @@ public class LeafWorkflowImpl implements LeafWorkflow {
     );
 
     @Override
-    public Void process(NodeInput input) {
+    public String process(NodeInput input) {
+        NodeWorkflow parent = Workflow.newExternalWorkflowStub(NodeWorkflow.class,
+            Workflow.getInfo().getParentWorkflowId().get());
+
         int offset = input.getOffset();
 
         while (offset < input.getOffset() + input.getLength()) {
             activity.run(offset, input.getOffset(), input.getLength());
+            
+            parent.putResult(1);
+            
             offset++;
         }
 
-        return null;
+        return "Processed " + input.getLength() + " records.";
     }
 }

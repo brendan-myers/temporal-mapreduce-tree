@@ -6,5 +6,5 @@ import io.temporal.workflow.WorkflowMethod;
 @WorkflowInterface
 public interface LeafWorkflow {
     @WorkflowMethod
-    Void process(NodeInput input);
+    String process(NodeInput input);
 }

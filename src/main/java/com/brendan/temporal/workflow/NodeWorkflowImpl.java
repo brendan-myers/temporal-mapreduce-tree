@@ -23,8 +23,11 @@ public class NodeWorkflowImpl implements NodeWorkflow {
     @Value("${tree.maxDepth}")
     private Integer maxDepth;
 
+    private List<Integer> results = new ArrayList<Integer>();
+    private Integer numChildren = 0;
+
     @Override
-    public Void run(NodeInput input) {
+    public String run(NodeInput input) {
         // Is this the root node?
         if (input.getDepth() == 0) {
             input = new NodeInput(0, input.getLength(), 0, 
@@ -43,13 +46,30 @@ public class NodeWorkflowImpl implements NodeWorkflow {
             createLeaves(input);
         }
 
-        return null;
+        Workflow.await(() -> results.size() >= numChildren);
+
+        // reduce the results
+        Integer result = results.stream().reduce(0, (x,y) -> x+y);
+
+        if (input.getDepth() > 0) {
+            NodeWorkflow parent = Workflow.newExternalWorkflowStub(NodeWorkflow.class,
+                Workflow.getInfo().getParentWorkflowId().get());
+            
+            parent.putResult(result);
+        }
+
+        return "Processed " + result + " records.";
+    }
+
+    @Override
+    public void putResult(Integer result) {
+        results.add(result);
     }
 
     private void createNodes(NodeInput input) {
         int offset = input.getOffset();
         
-        List<Promise<Void>> promises = new ArrayList<>();
+        List<Promise<String>> promises = new ArrayList<>();
         
         // Split the remaining items amongst maxChildren
         while (offset < input.getOffset() + input.getLength()) {
@@ -71,6 +91,8 @@ public class NodeWorkflowImpl implements NodeWorkflow {
 
             promises.add(Async.function(node::run, childNode));
 
+            numChildren++;
+
             offset += length;
         }
 
@@ -78,7 +100,7 @@ public class NodeWorkflowImpl implements NodeWorkflow {
     }
 
     private void createLeaves(NodeInput input) {
-        List<Promise<Void>> promises = new ArrayList<>();
+        List<Promise<String>> promises = new ArrayList<>();
 
         int offset = input.getOffset();
 
@@ -99,6 +121,8 @@ public class NodeWorkflowImpl implements NodeWorkflow {
             );
 
             promises.add(Async.function(leaf::process, leafNode));
+
+            numChildren++;
 
             // use the minimum number of leaf nodes, but each with the max items.
             // alternative: evenly distribute across maxChildren leaves.

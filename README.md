@@ -1,6 +1,6 @@
-# Temporal Tree Fanout
+# Temporal MapReduce Tree
 
-Demonstration of fan-out using trees with Temporal workflows.
+Demonstration of mapreduce using trees with Temporal workflows.
 
 ## Requirements
 
