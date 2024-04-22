@@ -10,7 +10,7 @@ import io.temporal.spring.boot.ActivityImpl;
 
 @Component
 @ActivityImpl(taskQueues = "tree-tq")
-public class RecordImpl implements RecordActivity {
+public class RecordActivityImpl implements RecordActivity {
 
     @Override
     public void run(Integer recordId, Integer offset, Integer length) {
@@ -26,5 +26,4 @@ public class RecordImpl implements RecordActivity {
             offset + ".." + (offset + length) + 
             " : " + recordId);
     }
-    
 }

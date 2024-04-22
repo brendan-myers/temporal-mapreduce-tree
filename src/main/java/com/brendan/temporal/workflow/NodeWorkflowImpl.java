@@ -3,6 +3,8 @@ package com.brendan.temporal.workflow;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import io.temporal.api.enums.v1.ParentClosePolicy;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.Async;
@@ -12,13 +14,28 @@ import io.temporal.workflow.Workflow;
 
 @WorkflowImpl(taskQueues = "tree-tq")
 public class NodeWorkflowImpl implements NodeWorkflow {
+    @Value("${tree.maxItemsPerLeaf}")
+    private Integer maxItemsPerLeaf;
+
+    @Value("${tree.maxChildren}")
+    private Integer maxChildren;
+
+    @Value("${tree.maxDepth}")
+    private Integer maxDepth;
+
     @Override
     public Void run(NodeInput input) {
+        // Is this the root node?
+        if (input.getDepth() == 0) {
+            input = new NodeInput(0, input.getLength(), 0, 
+                maxItemsPerLeaf, maxChildren, maxDepth);
+        }
+
         // Do we need another layer of nodes?
         if (input.getMaxChildren() * input.getMaxItemsPerLeaf() < input.getLength()) {
-            // if (input.getDepth() == input.getMaxDepth()) {
-            //     throw new Exception("Max depth exceeded");
-            // }
+            if (input.getDepth() == input.getMaxDepth()) {
+                throw Workflow.wrap(new Exception("Max depth exceeded"));
+            }
 
             createNodes(input);
 
@@ -30,17 +47,16 @@ public class NodeWorkflowImpl implements NodeWorkflow {
     }
 
     private void createNodes(NodeInput input) {
-        int i = 0;
-        int offset = 0;
+        int offset = input.getOffset();
         
         List<Promise<Void>> promises = new ArrayList<>();
         
         // Split the remaining items amongst maxChildren
-        while (i < input.getMaxChildren()) {
+        while (offset < input.getOffset() + input.getLength()) {
             int length = input.getLength() / input.getMaxChildren();
 
             // Add any extra records to the first child
-            if (i == 0) {
+            if (offset == input.getOffset()) {
                 length += input.getLength() % input.getMaxChildren();
             }
 
@@ -55,7 +71,6 @@ public class NodeWorkflowImpl implements NodeWorkflow {
 
             promises.add(Async.function(node::run, childNode));
 
-            i++;
             offset += length;
         }
 

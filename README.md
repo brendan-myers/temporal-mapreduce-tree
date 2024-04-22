@@ -19,9 +19,9 @@ Start the Temporal worker
 Run the workflow
 ```zsh
 temporal workflow start \
---type RootWorkflow \
+--type NodeWorkflow \
 --task-queue tree-tq \
---input 100 --input 5 # Number of elements, Number of children per node
+--input '{"length": 200}'
 ```
 
 ## Learn more about Temporal and the Java SDK
